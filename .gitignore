@@ -1,0 +1,12 @@
+# Ignore build outputs and personal config
+bin/
+obj/
+.vs/
+*.user
+
+# Ignore appsettings if you don't want to commit them (optional)
+appsettings.json
+appsettings.Development.json
+
+# Ignore log files
+*.log
