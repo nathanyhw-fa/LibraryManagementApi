@@ -62,7 +62,7 @@ namespace LibraryManagementSystem.Migrations
                     b.Property<int>("NumberOfPages")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("PublicationDate")
+                    b.Property<DateOnly>("PublicationDate")
                         .HasColumnType("date");
 
                     b.Property<string>("Publisher")
@@ -98,7 +98,7 @@ namespace LibraryManagementSystem.Migrations
                     b.Property<Guid>("BookId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("BorrowDate")
+                    b.Property<DateOnly>("BorrowDate")
                         .HasColumnType("date");
 
                     b.Property<Guid>("CreatedByUserId")
@@ -107,7 +107,7 @@ namespace LibraryManagementSystem.Migrations
                     b.Property<DateTime>("CreatedDateUTC")
                         .HasColumnType("datetime2(7)");
 
-                    b.Property<DateTime>("DueDate")
+                    b.Property<DateOnly>("DueDate")
                         .HasColumnType("date");
 
                     b.Property<Guid>("LastUpdatedByUserId")
@@ -119,7 +119,7 @@ namespace LibraryManagementSystem.Migrations
                     b.Property<Guid>("MemberId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime?>("ReturnDate")
+                    b.Property<DateOnly?>("ReturnDate")
                         .HasColumnType("date");
 
                     b.Property<string>("Status")

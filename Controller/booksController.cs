@@ -44,8 +44,8 @@ namespace LibraryManagementSystem.Controller
             public string MemberName { get; set; }
             public string MemberEmail { get; set; }
             public string MemberPhone { get; set; }
-            public DateTime BorrowDate { get; set; }
-            public DateTime DueDate { get; set; }
+            public DateOnly BorrowDate { get; set; }
+            public DateOnly DueDate { get; set; }
         }
 
         public class BookObject
@@ -56,7 +56,7 @@ namespace LibraryManagementSystem.Controller
             public string Author { get; set; }
             public string Synopsis { get; set; }
             public string Publisher { get; set; }
-            public DateTime PublicationDate { get; set; }
+            public DateOnly PublicationDate { get; set; }
             public string Edition { get; set; }
             public int NumberOfPages { get; set; }
             public string Language { get; set; }
@@ -78,7 +78,7 @@ namespace LibraryManagementSystem.Controller
             public string CreatedBy { get; set; }
             public DateTime CreatedDateUTC { get; set; }
             public string LastUpdatedBy { get; set; }
-            public DateTime LastUpdatedDateUTC { get;set; }
+            public DateTime LastUpdatedDateUTC { get; set; }
         }
 
         [Authorize]
@@ -108,7 +108,8 @@ namespace LibraryManagementSystem.Controller
                 // Call the stored procedure to get books
                 DataTable bookTable = await _databaseService.RunStoredProcedureAsync("prc_GetBooks", parameters);
                 var books = new List<BookObject>();
-                if (bookTable.Rows.Count > 0) {
+                if (bookTable.Rows.Count > 0)
+                {
                     foreach (DataRow row in bookTable.Rows)
                     {
                         var createdByDisplayName = await _context.UserInfos
@@ -127,7 +128,7 @@ namespace LibraryManagementSystem.Controller
                             Author = row["Author"].ToString(),
                             Synopsis = row["Synopsis"].ToString(),
                             Publisher = row["Publisher"].ToString(),
-                            PublicationDate = Convert.ToDateTime(row["PublicationDate"].ToString()),
+                            PublicationDate = DateOnly.FromDateTime(Convert.ToDateTime(row["PublicationDate"].ToString())),
                             Edition = row["Edition"].ToString(),
                             NumberOfPages = Convert.ToInt32(row["NumberOfPages"]),
                             Language = row["Language"].ToString(),
@@ -149,8 +150,8 @@ namespace LibraryManagementSystem.Controller
                                 MemberName = row["FullName"].ToString(),
                                 MemberEmail = row["Email"].ToString(),
                                 MemberPhone = row["Phone"].ToString(),
-                                BorrowDate = Convert.ToDateTime(row["BorrowDate"]),
-                                DueDate = Convert.ToDateTime(row["DueDate"])
+                                BorrowDate = DateOnly.FromDateTime(Convert.ToDateTime(row["BorrowDate"])),
+                                DueDate = DateOnly.FromDateTime(Convert.ToDateTime(row["DueDate"]))
                             };
 
                             book.BookTracking = tracking;
@@ -164,7 +165,7 @@ namespace LibraryManagementSystem.Controller
                 {
                     return _databaseService.CreateErrorResponse(404, "Not Found", "No books can be found");
                 }
-                
+
             }
             catch (SqlException ex)
             {
@@ -183,7 +184,7 @@ namespace LibraryManagementSystem.Controller
             public string Author { get; set; }
             public string Synopsis { get; set; }
             public string Publisher { get; set; }
-            public DateTime PublicationDate { get; set; }
+            public DateOnly PublicationDate { get; set; }
             public string Edition { get; set; }
             public int NumberOfPages { get; set; }
             public string Language { get; set; }
@@ -197,7 +198,7 @@ namespace LibraryManagementSystem.Controller
         {
             try
             {
-                if(addBookRequest == null ||
+                if (addBookRequest == null ||
                    string.IsNullOrWhiteSpace(addBookRequest.Title) ||
                    string.IsNullOrWhiteSpace(addBookRequest.Genre) ||
                    string.IsNullOrWhiteSpace(addBookRequest.Author) ||
@@ -257,7 +258,7 @@ namespace LibraryManagementSystem.Controller
             public string? Author { get; set; }
             public string? Synopsis { get; set; }
             public string? Publisher { get; set; }
-            public DateTime? PublicationDate { get; set; }
+            public DateOnly? PublicationDate { get; set; }
             public string? Edition { get; set; }
             public int? NumberOfPages { get; set; }
             public string? Language { get; set; }
@@ -267,12 +268,12 @@ namespace LibraryManagementSystem.Controller
 
         [Authorize(Roles = "Admin")]
         [HttpPost("updatebook")]
-        public async Task<IActionResult> UpdateBook (UpdateBookRequest updateBookRequest)
+        public async Task<IActionResult> UpdateBook(UpdateBookRequest updateBookRequest)
         {
             try
             {
                 // Checking for empty fields
-                if(updateBookRequest == null || updateBookRequest.BookId == Guid.Empty)
+                if (updateBookRequest == null || updateBookRequest.BookId == Guid.Empty)
                 {
                     return _databaseService.CreateErrorResponse(400, "Bad Request", "BookId is required.");
                 }
@@ -293,7 +294,7 @@ namespace LibraryManagementSystem.Controller
                 var updatedNumberOfPages = updateBookRequest.NumberOfPages.HasValue ? updateBookRequest.NumberOfPages : book.NumberOfPages;
                 var updatedLanguage = !string.IsNullOrWhiteSpace(updateBookRequest.Language) ? updateBookRequest.Language : book.Language;
                 var updatedIsbn = !string.IsNullOrWhiteSpace(updateBookRequest.Isbn) ? updateBookRequest.Isbn : book.Isbn;
-                var updatedStatus = updateBookRequest.Status.HasValue? updateBookRequest.Status : book.Status;
+                var updatedStatus = updateBookRequest.Status.HasValue ? updateBookRequest.Status : book.Status;
                 var userId = User.FindFirst("uid")?.Value;
                 var dateUpdated = DateTime.UtcNow;
 
@@ -319,17 +320,18 @@ namespace LibraryManagementSystem.Controller
 
                 // Call the stored procedure to update book details
                 DataTable bookTable = await _databaseService.RunStoredProcedureAsync("prc_UpdateBookDetails", parameters);
-                if( bookTable.Rows.Count > 0)
+                if (bookTable.Rows.Count > 0)
                 {
                     var lastUpdatedBy = await (from ui in _context.UserInfos
                                                where ui.UserId.ToString() == bookTable.Rows[0]["LastUpdatedByUserId"].ToString()
                                                select ui.DisplayName).FirstOrDefaultAsync();
                     var createdBy = await (from ui in _context.UserInfos
-                                               where ui.UserId.ToString() == bookTable.Rows[0]["CreatedByUserId"].ToString()
-                                               select ui.DisplayName).FirstOrDefaultAsync();
-                    var status = bookTable.Rows[0]["Status"];
+                                           where ui.UserId.ToString() == bookTable.Rows[0]["CreatedByUserId"].ToString()
+                                           select ui.DisplayName).FirstOrDefaultAsync();
+                    var status = bookTable.Rows[0]["Status"].ToString();
                     string statusDescription = string.Empty;
-                    switch (status){
+                    switch (status)
+                    {
                         case "0":
                             statusDescription = "lost";
                             break;
@@ -382,14 +384,14 @@ namespace LibraryManagementSystem.Controller
         {
             public Guid BookId { get; set; }
             public Guid MemberId { get; set; }
-            public Guid? TrackingId { get; set; } =null;
-            public Guid? ReserveId { get; set; } =null;
-            public int? BorrowPeriodByDay { get; set; } =null;
+            public Guid? TrackingId { get; set; } = null;
+            public Guid? ReserveId { get; set; } = null;
+            public int? BorrowPeriodByDay { get; set; } = null;
         }
 
         [Authorize]
         [HttpPost("bookTrack")]
-        public async Task<IActionResult> TrackBook (TrackBookRequest trackBookRequest)
+        public async Task<IActionResult> TrackBook(TrackBookRequest trackBookRequest)
         {
             try
             {
@@ -400,31 +402,36 @@ namespace LibraryManagementSystem.Controller
                     return _databaseService.CreateErrorResponse(400, "Bad Request", "BookId and MemberId is required.");
                 }
                 var date = DateTime.UtcNow;
-                DateTime? borrowDate = null;
-                DateTime? dueDate = null;
-                DateTime? returnDate = null;
+                DateOnly? borrowDate = null;
+                DateOnly? dueDate = null;
+                DateOnly? returnDate = null;
                 var userId = User.FindFirst("uid")?.Value;
                 Guid trackingId = Guid.Empty;
                 Guid reserveId = Guid.Empty;
+
+                // Logic for borrowing a book
                 if (trackBookRequest.TrackingId == null && trackBookRequest.BorrowPeriodByDay.HasValue)
                 {
                     action = "borrow";
                     trackingId = Guid.NewGuid();
-                    borrowDate = date;
-                    dueDate = date.AddDays(trackBookRequest.BorrowPeriodByDay.Value);
+                    borrowDate = DateOnly.FromDateTime(date); // Convert current DateTime to DateOnly
+                    dueDate = borrowDate.Value.AddDays(trackBookRequest.BorrowPeriodByDay.Value); // Adjust due date
                 }
+                // Logic for returning a book
                 else if (trackBookRequest.TrackingId != Guid.Empty)
                 {
                     action = "return";
                     trackingId = (Guid)trackBookRequest.TrackingId;
-                    returnDate = date;
+                    returnDate = DateOnly.FromDateTime(date); // Convert current DateTime to DateOnly
                 }
-                else if (trackBookRequest.ReserveId != Guid.Empty) {
+                // Logic for reserving a book
+                else if (trackBookRequest.ReserveId != Guid.Empty)
+                {
                     action = "reserve";
                     reserveId = (Guid)trackBookRequest.ReserveId;
                     trackingId = Guid.NewGuid();
-                    borrowDate = date;
-                    dueDate = date.AddDays(trackBookRequest.BorrowPeriodByDay.Value);
+                    borrowDate = DateOnly.FromDateTime(date); // Convert current DateTime to DateOnly
+                    dueDate = borrowDate.Value.AddDays(trackBookRequest.BorrowPeriodByDay.Value); // Adjust due date
                 }
                 else
                 {
@@ -448,22 +455,23 @@ namespace LibraryManagementSystem.Controller
                 };
                 // Call the stored procedure to track books
                 DataTable trackingTable = await _databaseService.RunStoredProcedureAsync("prc_TrackBook", parameters);
-                if (trackingTable.Rows.Count > 0) { 
+                if (trackingTable.Rows.Count > 0)
+                {
                     var bookLastUpdatedBy = await (from ui in _context.UserInfos
-                                                where ui.UserId.ToString() == trackingTable.Rows[0]["BookLastUpdatedByUserId"].ToString()
-                                                select ui.DisplayName).FirstOrDefaultAsync();
+                                                   where ui.UserId.ToString() == trackingTable.Rows[0]["BookLastUpdatedByUserId"].ToString()
+                                                   select ui.DisplayName).FirstOrDefaultAsync();
                     var bookCreatedBy = await (from ui in _context.UserInfos
-                                            where ui.UserId.ToString() == trackingTable.Rows[0]["BookCreatedByUserId"].ToString()
-                                            select ui.DisplayName).FirstOrDefaultAsync();
+                                               where ui.UserId.ToString() == trackingTable.Rows[0]["BookCreatedByUserId"].ToString()
+                                               select ui.DisplayName).FirstOrDefaultAsync();
                     var memberLastUpdatedBy = await (from ui in _context.UserInfos
-                                                        where ui.UserId.ToString() == trackingTable.Rows[0]["MemberLastUpdatedByUserId"].ToString()
-                                                        select ui.DisplayName).FirstOrDefaultAsync();
+                                                     where ui.UserId.ToString() == trackingTable.Rows[0]["MemberLastUpdatedByUserId"].ToString()
+                                                     select ui.DisplayName).FirstOrDefaultAsync();
                     var memberCreatedBy = await (from ui in _context.UserInfos
-                                                    where ui.UserId.ToString() == trackingTable.Rows[0]["MemberCreatedByUserId"].ToString()
-                                                    select ui.DisplayName).FirstOrDefaultAsync();
+                                                 where ui.UserId.ToString() == trackingTable.Rows[0]["MemberCreatedByUserId"].ToString()
+                                                 select ui.DisplayName).FirstOrDefaultAsync();
                     var trackingCreatedBy = await (from ui in _context.UserInfos
-                                                    where ui.UserId.ToString() == trackingTable.Rows[0]["TrackingCreatedByUserId"].ToString()
-                                                    select ui.DisplayName).FirstOrDefaultAsync();
+                                                   where ui.UserId.ToString() == trackingTable.Rows[0]["TrackingCreatedByUserId"].ToString()
+                                                   select ui.DisplayName).FirstOrDefaultAsync();
                     var status = trackingTable.Rows[0]["BookStatus"].ToString();
                     string statusDescription = string.Empty;
                     switch (status)
@@ -497,7 +505,7 @@ namespace LibraryManagementSystem.Controller
                         Author = trackingTable.Rows[0]["Author"].ToString(),
                         Synopsis = trackingTable.Rows[0]["Synopsis"].ToString(),
                         Publisher = trackingTable.Rows[0]["Publisher"].ToString(),
-                        PublicationDate = Convert.ToDateTime(trackingTable.Rows[0]["PublicationDate"].ToString()),
+                        PublicationDate = DateOnly.FromDateTime(Convert.ToDateTime(trackingTable.Rows[0]["PublicationDate"].ToString())),
                         Edition = trackingTable.Rows[0]["Edition"].ToString(),
                         NumberOfPages = Convert.ToInt32(trackingTable.Rows[0]["NumberOfPages"]),
                         Language = trackingTable.Rows[0]["Language"].ToString(),
@@ -508,18 +516,25 @@ namespace LibraryManagementSystem.Controller
                         LastUpdatedBy = bookLastUpdatedBy,
                         LastUpdatedDateUTC = Convert.ToDateTime(trackingTable.Rows[0]["BookLastUpdatedUTC"]),
                     };
+
+                    borrowDate = trackingTable.Rows[0]["BorrowDate"] == DBNull.Value
+                        ? (DateOnly?)null
+                        : DateOnly.FromDateTime(Convert.ToDateTime(trackingTable.Rows[0]["BorrowDate"]));
+
+                   
+
                     var bookReturnDate = trackingTable.Rows[0]["ReturnDate"] == DBNull.Value
-                                        ? (DateTime?)null
-                                        : Convert.ToDateTime(trackingTable.Rows[0]["ReturnDate"]);
+                                           ? (DateOnly?)null
+                                           : DateOnly.FromDateTime(Convert.ToDateTime(trackingTable.Rows[0]["ReturnDate"]));
 
                     return Ok(new
                     {
                         trackingId = Guid.Parse(trackingTable.Rows[0]["TrackingId"].ToString()),
                         bookDetails = book,
                         memberDetails = member,
-                        borrowDate = Convert.ToDateTime(trackingTable.Rows[0]["BorrowDate"]),
-                        dueDate = Convert.ToDateTime(trackingTable.Rows[0]["DueDate"]),
-                        returnDate =bookReturnDate,
+                        borrowDate = DateOnly.FromDateTime(Convert.ToDateTime(trackingTable.Rows[0]["BorrowDate"])),
+                        dueDate = DateOnly.FromDateTime(Convert.ToDateTime(trackingTable.Rows[0]["DueDate"])),
+                        returnDate = bookReturnDate,
                         status = trackingTable.Rows[0]["TrackingStatus"].ToString(),
                         createdBy = trackingCreatedBy,
                         createdDateUTC = Convert.ToDateTime(trackingTable.Rows[0]["TrackingCreatedDateUTC"]),
@@ -530,7 +545,7 @@ namespace LibraryManagementSystem.Controller
                 {
                     return _databaseService.CreateErrorResponse(404, "Not Found", "No books can be found");
                 }
-                
+
             }
             catch (SqlException ex)
             {
@@ -550,7 +565,7 @@ namespace LibraryManagementSystem.Controller
 
         [Authorize]
         [HttpPost("reservebook")]
-        public async Task<IActionResult> ReserveBook (ReserveBookRequest reserveBookRequest)
+        public async Task<IActionResult> ReserveBook(ReserveBookRequest reserveBookRequest)
         {
             try
             {
@@ -575,7 +590,7 @@ namespace LibraryManagementSystem.Controller
 
                 // Call the stored procedure to reserve book
                 await _databaseService.RunStoredProcedureAsync("prc_ReserveBook", parameters);
-                return Ok(new {reserveId = reserveId});
+                return Ok(new { reserveId = reserveId });
             }
             catch (SqlException ex)
             {
@@ -595,10 +610,12 @@ namespace LibraryManagementSystem.Controller
 
         [Authorize]
         [HttpPost("payment")]
-        public async Task<IActionResult> Payment (PaymentRequest paymentRequest)
+        public async Task<IActionResult> Payment(PaymentRequest paymentRequest)
         {
-            try {
-                if (paymentRequest == null || paymentRequest.TrackingId == Guid.Empty) {
+            try
+            {
+                if (paymentRequest == null || paymentRequest.TrackingId == Guid.Empty)
+                {
                     return _databaseService.CreateErrorResponse(400, "Bad Request", "TrackingId and Days of Overdue is required.");
                 }
                 var paymentId = Guid.NewGuid();

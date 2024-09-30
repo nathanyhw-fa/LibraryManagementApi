@@ -1,14 +1,12 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore; 
-using System;
-using System.Threading.Tasks;
-using LibraryManagementSystem.Data;  
+﻿using Microsoft.EntityFrameworkCore; 
+using LibraryManagementSystem.Data;
 
 namespace LibraryManagementSystem.Middleware
 {
     public class TokenValidationMiddleware
     {
         private readonly RequestDelegate _next;
+
 
         public TokenValidationMiddleware(RequestDelegate next)
         {
@@ -29,8 +27,10 @@ namespace LibraryManagementSystem.Middleware
 
                 if (session == null || session.Status != 1 || session.ExpiryDateUTC < DateTime.UtcNow)
                 {
-                    context.Response.StatusCode = 401; // Unauthorized
+                    // Unauthorized
+                    context.Response.StatusCode = 401; 
                     await context.Response.WriteAsync("Session is no longer active.");
+
                     return;
                 }
             }
